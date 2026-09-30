@@ -1,8 +1,6 @@
 import type {
-  Answer,
   NextQuestionResponse,
-  Question,
-  StartQuizResponse,
+  QuizHistoryEntry,
 } from "@curator/shared";
 
 async function post<T>(path: string, body: unknown): Promise<T> {
@@ -20,20 +18,9 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export function startQuiz(): Promise<StartQuizResponse> {
-  return post<StartQuizResponse>("/api/quiz/start", {});
-}
-
-export function submitAnswer(
-  sessionId: string,
-  answer: Answer,
+/** Sends the full history; the server returns the next turn. */
+export function nextQuestion(
+  history: QuizHistoryEntry[],
 ): Promise<NextQuestionResponse> {
-  return post<NextQuestionResponse>("/api/quiz/next", {
-    sessionId,
-    answers: [answer],
-  });
-}
-
-export function generatePlaylist(sessionId: string): Promise<{ status: string }> {
-  return post("/api/quiz/generate", { sessionId });
+  return post<NextQuestionResponse>("/api/quiz/next", { history });
 }

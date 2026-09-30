@@ -1,16 +1,26 @@
-import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import type { Question } from "@curator/shared";
 import { AnswerRow } from "../components/AnswerRow";
 import { useQuiz } from "../hooks/useQuiz";
 
-export default function QuizPage() {
-  const quiz = useQuiz();
-  const { phase, question, questionCount, error } = quiz;
+/** Served locally so question 1 appears instantly, no network wait. */
+const SEED_QUESTION: Question = {
+  id: "seed-core-genres",
+  index: 0,
+  type: "single_choice",
+  topic: "core-genres",
+  text: "First one's on the house: which corner of the music universe feels most like home?",
+  options: [
+    { id: "rock", label: "Rock & guitar things", emoji: "🎸" },
+    { id: "pop", label: "Pop bops", emoji: "✨" },
+    { id: "electronic", label: "Electronic / dance", emoji: "🎛️" },
+    { id: "hiphop", label: "Hip-hop & R&B", emoji: "🎤" },
+  ],
+};
 
-  useEffect(() => {
-    if (phase === "starting") void quiz.begin();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+export default function QuizPage() {
+  const quiz = useQuiz(SEED_QUESTION);
+  const { phase, question, questionCount, error } = quiz;
 
   return (
     <main className="relative flex min-h-full flex-col">
@@ -38,12 +48,6 @@ export default function QuizPage() {
       </header>
 
       <section className="relative z-10 mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center px-6 py-12">
-        {phase === "starting" && (
-          <p className="text-center text-lg font-bold text-white/60 animate-pulse">
-            Tuning the first question…
-          </p>
-        )}
-
         {phase === "error" && (
           <div className="text-center">
             <p className="text-2xl font-black text-neon-pink">Record scratch.</p>
@@ -73,7 +77,7 @@ export default function QuizPage() {
               <AnswerRow
                 question={question}
                 disabled={phase === "submitting"}
-                onAnswer={(answer) => void quiz.answer(answer)}
+                onAnswer={quiz.answer}
               />
               {phase === "submitting" && (
                 <p className="animate-pulse text-sm font-bold text-white/50">

@@ -1,12 +1,11 @@
 import { QUIZ_LIMITS, QuestionSchema } from "@curator/shared";
-import type { Answer, Question } from "@curator/shared";
+import type { Answer, Question, QuizHistoryEntry } from "@curator/shared";
 import {
   LlmError,
   type NextQuestionInput,
   type NextQuestionResult,
   type QuizLlmProvider,
 } from "../llm/types.js";
-import type { QuizStore } from "./store.js";
 
 const MAX_LLM_ATTEMPTS = 2;
 
@@ -32,12 +31,13 @@ export interface QuizOutcome {
 export type QuizEngine = ReturnType<typeof createQuizEngine>;
 
 /**
- * The adaptive quiz engine (SPEC.md §5): commits each answer, then asks
- * the LLM provider for the next question with hard server-side
- * guardrails — min/max counts, schema validation, topic uniqueness, and
- * a deterministic fallback question if the provider misbehaves.
+ * Stateless adaptive quiz engine (SPEC.md §5). The client owns the
+ * history; the server verifies its integrity, then asks the LLM
+ * provider for the next question with hard guardrails: min/max counts,
+ * schema validation, topic uniqueness, and a deterministic fallback if
+ * the provider misbehaves.
  */
-export function createQuizEngine(store: QuizStore, provider: QuizLlmProvider) {
+export function createQuizEngine(provider: QuizLlmProvider) {
   async function ask(count: number, history: NextQuestionInput["history"]): Promise<AskResult> {
     const input: NextQuestionInput = {
       questionCount: count,
@@ -90,31 +90,11 @@ export function createQuizEngine(store: QuizStore, provider: QuizLlmProvider) {
   return {
     providerName: provider.name,
 
-    async start(): Promise<{ sessionId: string; question: Question }> {
-      const session = await store.create();
-      const result = await ask(0, []);
-      if (!result.done) {
-        const question = { ...result.question, index: 0 };
-        await store.setPendingQuestion(session.id, question);
-        return { sessionId: session.id, question };
-      }
-      // Practically unreachable (fallback pool always has topics).
-      throw new QuizEngineError("quiz_bootstrap_failed", 500);
-    },
+    /** Verifies the client's history, then produces the next turn. */
+    async next(history: QuizHistoryEntry[]): Promise<QuizOutcome> {
+      verifyHistory(history);
 
-    async submitAnswer(sessionId: string, answer: Answer): Promise<QuizOutcome> {
-      const session = await store.get(sessionId);
-      if (!session) throw new QuizEngineError("quiz_session_not_found", 404);
-      if (session.status !== "active") {
-        throw new QuizEngineError("quiz_session_not_active", 409);
-      }
-      const pending = session.pendingQuestion;
-      if (!pending) throw new QuizEngineError("no_pending_question", 409);
-
-      validateAnswer(pending, answer);
-
-      const questionCount = session.questionCount + 1;
-      await store.appendAnswer(sessionId, pending, answer, questionCount);
+      const questionCount = history.length;
 
       // Hard cap: finish without another LLM round-trip.
       if (questionCount >= QUIZ_LIMITS.max) {
@@ -126,10 +106,7 @@ export function createQuizEngine(store: QuizStore, provider: QuizLlmProvider) {
         };
       }
 
-      const result = await ask(questionCount, session.history);
-      if (!result.done) {
-        await store.setPendingQuestion(sessionId, result.question);
-      }
+      const result = await ask(questionCount, history);
       return {
         result,
         questionCount,
@@ -137,34 +114,31 @@ export function createQuizEngine(store: QuizStore, provider: QuizLlmProvider) {
         maxQuestions: QUIZ_LIMITS.max,
       };
     },
-
-    async getState(sessionId: string) {
-      const session = await store.get(sessionId);
-      if (!session) throw new QuizEngineError("quiz_session_not_found", 404);
-      return {
-        sessionId: session.id,
-        status: session.status,
-        questionCount: session.questionCount,
-        minQuestions: QUIZ_LIMITS.min,
-        maxQuestions: QUIZ_LIMITS.max,
-      };
-    },
-
-    async beginGeneration(sessionId: string): Promise<void> {
-      const session = await store.get(sessionId);
-      if (!session) throw new QuizEngineError("quiz_session_not_found", 404);
-      if (session.questionCount < QUIZ_LIMITS.min) {
-        throw new QuizEngineError("quiz_too_short", 422);
-      }
-      if (session.status !== "active") {
-        throw new QuizEngineError("quiz_session_not_active", 409);
-      }
-      await store.setStatus(sessionId, "generating");
-    },
   };
 }
 
-// ---- answer validation ----------------------------------------------------
+// ---- history verification ---------------------------------------------------
+
+/**
+ * The history is client-supplied, so treat it as hostile: answers must
+ * match their questions (type + ids + option ids), and topics must be
+ * unique. Tampered or malformed histories are rejected outright.
+ */
+function verifyHistory(history: QuizHistoryEntry[]): void {
+  const seenTopics = new Set<string>();
+  history.forEach((entry, i) => {
+    const { question, answer } = entry;
+    if (seenTopics.has(question.topic)) {
+      throw new QuizEngineError(`duplicate_question_topic_at_${i}`, 422);
+    }
+    seenTopics.add(question.topic);
+    try {
+      validateAnswer(question, answer);
+    } catch {
+      throw new QuizEngineError(`invalid_answer_at_${i}`, 422);
+    }
+  });
+}
 
 function validateAnswer(question: Question, answer: Answer): void {
   if (answer.questionId !== question.id) {

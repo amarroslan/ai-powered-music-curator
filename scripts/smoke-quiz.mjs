@@ -1,12 +1,11 @@
 /**
- * End-to-end quiz smoke test (M2).
- * Drives the full loop against a running API: start → answer until
- * done → generate. Answering strategy: always pick the first option.
+ * End-to-end quiz smoke test (stateless contract).
+ * Drives /api/quiz/next with a growing client-side history until done.
  *
- * Usage: node scripts/smoke-quiz.mjs [baseUrl]
+ * Usage: SMOKE_DELAY_MS=6500 node scripts/smoke-quiz.mjs [baseUrl]
  */
 const BASE = process.argv[2] ?? "http://localhost:4000";
-/** Optional spacing between LLM-backed calls, e.g. SMOKE_DELAY_MS=6500 for free-tier RPM limits. */
+/** Spacing between LLM-backed calls, e.g. 6500 for free-tier RPM limits. */
 const DELAY = Number(process.env.SMOKE_DELAY_MS ?? 0);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -37,22 +36,20 @@ function answerFor(question) {
   return { type: "free_text", questionId, text: "whatever " + questionId };
 }
 
-const start = await post("/api/quiz/start", {});
-console.log(`started session ${start.sessionId}`);
-console.log(`q1 [${start.question.topic}] ${start.question.text}`);
+const health = await fetch(`${BASE}/api/health`).then((r) => r.json());
+console.log(`health: llm=${health.llm}`);
 
-const sessionId = start.sessionId;
-let count = 1;
+// First question is served locally by the same seed logic the client
+// uses; but the stateless API must also accept an empty history to
+// produce one. We use the server for q1 to prove the cold path works.
+let history = [];
+let count = 0;
 let done = false;
+let pending = null;
 
-// The API is one-answer-per-request: answer the pending question, get the next.
-let pending = start.question;
 for (let i = 0; i < 40; i++) {
-  if (DELAY > 0) await sleep(DELAY);
-  const res = await post("/api/quiz/next", {
-    sessionId,
-    answers: [answerFor(pending)],
-  });
+  if (DELAY > 0 && count > 0) await sleep(DELAY);
+  const res = await post("/api/quiz/next", { history });
   if (res.done) {
     done = true;
     break;
@@ -60,11 +57,10 @@ for (let i = 0; i < 40; i++) {
   pending = res.question;
   count += 1;
   console.log(`q${count} [${pending.topic}] ${pending.text}`);
+  history = [...history, { question: pending, answer: answerFor(pending) }];
 }
 
 if (!done) throw new Error(`quiz never finished (asked ${count})`);
 if (count < 20) throw new Error(`finished too early at ${count} questions`);
 
-const gen = await post("/api/quiz/generate", { sessionId });
-console.log(`generate → ${JSON.stringify(gen)}`);
-console.log(`SMOKE OK: ${count} questions, quiz complete, generation accepted`);
+console.log(`SMOKE OK: ${count} questions through the stateless API`);

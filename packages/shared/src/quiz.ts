@@ -85,35 +85,21 @@ export const QUIZ_LIMITS = {
   max: 24,
 } as const;
 
-export const QuizSessionStatusSchema = z.enum([
-  "active",
-  "generating",
-  "done",
-  "failed",
-]);
-export type QuizSessionStatus = z.infer<typeof QuizSessionStatusSchema>;
-
-export const QuizStateSchema = z.object({
-  sessionId: z.string().uuid(),
-  status: QuizSessionStatusSchema,
-  questionCount: z.number().int().nonnegative(),
-  minQuestions: z.number().int().positive(),
-  maxQuestions: z.number().int().positive(),
+/** One answered question in the client-held quiz history. */
+export const QuizHistoryEntrySchema = z.object({
+  question: QuestionSchema,
+  answer: AnswerSchema,
 });
-export type QuizState = z.infer<typeof QuizStateSchema>;
+export type QuizHistoryEntry = z.infer<typeof QuizHistoryEntrySchema>;
 
 // ---- API contracts -------------------------------------------------------
 
-export const StartQuizRequestSchema = z.void();
-export const StartQuizResponseSchema = z.object({
-  sessionId: z.string().uuid(),
-  question: QuestionSchema,
-});
-export type StartQuizResponse = z.infer<typeof StartQuizResponseSchema>;
-
+/**
+ * Stateless quiz contract: the client owns the history and sends it
+ * with every request, so any serverless instance can serve any turn.
+ */
 export const NextQuestionRequestSchema = z.object({
-  sessionId: z.string().uuid(),
-  answers: z.array(AnswerSchema).min(1).max(QUIZ_LIMITS.max),
+  history: z.array(QuizHistoryEntrySchema).max(QUIZ_LIMITS.max),
 });
 export type NextQuestionRequest = z.infer<typeof NextQuestionRequestSchema>;
 

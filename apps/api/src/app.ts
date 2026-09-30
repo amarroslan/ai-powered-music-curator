@@ -5,7 +5,6 @@ import type { PrismaClient } from "@prisma/client";
 import { healthRouter } from "./routes/health.js";
 import { quizRouter } from "./routes/quiz.js";
 import { createQuizEngine, QuizEngineError } from "./quiz/engine.js";
-import { createMemoryQuizStore } from "./quiz/store.js";
 import { getQuizLlmProvider } from "./llm/index.js";
 import { LlmError } from "./llm/types.js";
 import { config } from "./config.js";
@@ -17,7 +16,7 @@ export function createApp(prisma: PrismaClient | null = null): express.Express {
   app.use(cors({ origin: config.corsOrigin }));
   app.use(express.json({ limit: "256kb" }));
 
-  const engine = createQuizEngine(createMemoryQuizStore(), getQuizLlmProvider());
+  const engine = createQuizEngine(getQuizLlmProvider());
 
   app.use("/api", healthRouter(prisma, engine.providerName));
   app.use("/api", quizRouter(engine));

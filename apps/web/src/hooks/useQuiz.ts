@@ -1,67 +1,50 @@
 import { useCallback, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import type { Answer, Question } from "@curator/shared";
-import * as api from "../api/quizApi";
+import type { Answer, Question, QuizHistoryEntry } from "@curator/shared";
+import { nextQuestion } from "../api/quizApi";
 
-export type QuizPhase = "starting" | "asking" | "submitting" | "error";
+export type QuizPhase = "asking" | "submitting" | "error";
 
 interface QuizFlowState {
   phase: QuizPhase;
-  sessionId: string | null;
+  /** The question currently on screen, awaiting an answer. */
   question: Question | null;
-  questionCount: number;
+  history: QuizHistoryEntry[];
   error: string | null;
 }
 
 const INITIAL: QuizFlowState = {
-  phase: "starting",
-  sessionId: null,
+  phase: "asking",
   question: null,
-  questionCount: 0,
+  history: [],
   error: null,
 };
 
-/** Owns the whole quiz flow: start → ask → answer → … → generate. */
-export function useQuiz() {
-  const navigate = useNavigate();
-  const [state, setState] = useState<QuizFlowState>(INITIAL);
+/**
+ * Client-side quiz flow for the stateless API: history lives here, is
+ * sent with every answer, and grows by one entry per turn. The first
+ * question is served locally so the quiz opens instantly.
+ */
+export function useQuiz(firstQuestion: Question) {
+  const [state, setState] = useState<QuizFlowState>({
+    ...INITIAL,
+    question: firstQuestion,
+  });
 
-  const begin = useCallback(async () => {
-    setState(INITIAL);
-    try {
-      const res = await api.startQuiz();
-      setState({
-        phase: "asking",
-        sessionId: res.sessionId,
-        question: res.question,
-        questionCount: 1,
-        error: null,
-      });
-    } catch (err) {
-      setState({
-        ...INITIAL,
-        phase: "error",
-        error: err instanceof Error ? err.message : "Could not start the quiz",
-      });
-    }
-  }, []);
-
-  const answer = useCallback(
-    async (answer: Answer) => {
-      if (!state.sessionId) return;
+  const advance = useCallback(
+    async (history: QuizHistoryEntry[]) => {
       setState((s) => ({ ...s, phase: "submitting", error: null }));
       try {
-        const res = await api.submitAnswer(state.sessionId, answer);
+        const res = await nextQuestion(history);
         if (res.done) {
-          await api.generatePlaylist(state.sessionId);
-          navigate("/generating");
+          // M3 wires this to the real generation pipeline.
+          window.location.href = "/generating";
           return;
         }
         setState((s) => ({
           ...s,
           phase: "asking",
           question: res.question,
-          questionCount: s.questionCount + 1,
+          history,
         }));
       } catch (err) {
         setState((s) => ({
@@ -71,12 +54,21 @@ export function useQuiz() {
         }));
       }
     },
-    [state.sessionId, navigate],
+    [],
+  );
+
+  const answer = useCallback(
+    (answer: Answer) => {
+      if (!state.question) return;
+      const entry: QuizHistoryEntry = { question: state.question, answer };
+      void advance([...state.history, entry]);
+    },
+    [state.question, state.history, advance],
   );
 
   const retry = useCallback(() => {
-    void begin();
-  }, [begin]);
+    setState({ ...INITIAL, question: firstQuestion });
+  }, [firstQuestion]);
 
-  return { ...state, begin, answer, retry };
+  return { ...state, questionCount: state.history.length + 1, answer, retry };
 }
