@@ -6,6 +6,9 @@
  * Usage: node scripts/smoke-quiz.mjs [baseUrl]
  */
 const BASE = process.argv[2] ?? "http://localhost:4000";
+/** Optional spacing between LLM-backed calls, e.g. SMOKE_DELAY_MS=6500 for free-tier RPM limits. */
+const DELAY = Number(process.env.SMOKE_DELAY_MS ?? 0);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function post(path, body) {
   const res = await fetch(`${BASE}${path}`, {
@@ -45,6 +48,7 @@ let done = false;
 // The API is one-answer-per-request: answer the pending question, get the next.
 let pending = start.question;
 for (let i = 0; i < 40; i++) {
+  if (DELAY > 0) await sleep(DELAY);
   const res = await post("/api/quiz/next", {
     sessionId,
     answers: [answerFor(pending)],

@@ -52,8 +52,14 @@ export function createQuizEngine(store: QuizStore, provider: QuizLlmProvider) {
       try {
         result = await provider.nextQuestion(input);
       } catch (err) {
-        if (err instanceof LlmError && attempt < MAX_LLM_ATTEMPTS) continue;
-        throw new QuizEngineError("llm_unavailable", 503);
+        // Provider down (quota, capacity, outage): keep the session
+        // alive with a deterministic question instead of 503-ing the
+        // user mid-quiz (SPEC.md §14 — never break the vibe).
+        console.error(
+          "[quiz] llm provider failed, serving fallback question:",
+          err instanceof Error ? err.message : err,
+        );
+        return { done: false, question: fallbackQuestion(count, usedTopics) };
       }
 
       if (result.done) {

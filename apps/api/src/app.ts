@@ -19,7 +19,7 @@ export function createApp(prisma: PrismaClient | null = null): express.Express {
 
   const engine = createQuizEngine(createMemoryQuizStore(), getQuizLlmProvider());
 
-  app.use("/api", healthRouter(prisma));
+  app.use("/api", healthRouter(prisma, engine.providerName));
   app.use("/api", quizRouter(engine));
 
   app.use((_req, res) => {

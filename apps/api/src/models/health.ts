@@ -7,6 +7,7 @@ import type { PrismaClient } from "@prisma/client";
  */
 export async function getHealth(
   prisma: PrismaClient | null,
+  llm: string,
 ): Promise<HealthResponse> {
   let db: HealthResponse["db"] = "unavailable";
   if (prisma) {
@@ -22,6 +23,7 @@ export async function getHealth(
     status: "ok",
     service: "music-curator-api",
     db,
+    llm,
     timestamp: new Date().toISOString(),
   };
 }
