@@ -30,7 +30,8 @@ const ScaleSchema = z.object({
 export const QuestionSchema = z
   .object({
     id: z.string().min(1).max(60),
-    index: z.number().int().nonnegative(),
+    /** Position in the quiz; assigned by the server, not the LLM. */
+    index: z.number().int().nonnegative().optional(),
     type: z.enum(QUESTION_TYPES),
     /** Topic tag used to prevent repeated questions. Must differ per question. */
     topic: z.string().min(1).max(60),

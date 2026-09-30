@@ -84,6 +84,7 @@ export default function LandingPage() {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.97 }}
           className="mt-10 rounded-full bg-gradient-to-r from-neon-pink to-electric-violet px-10 py-4 text-lg font-extrabold text-white shadow-[0_0_40px_rgba(255,47,179,0.45)]"
+          onClick={() => (window.location.href = "/quiz")}
         >
           Start the vibe check →
         </motion.button>

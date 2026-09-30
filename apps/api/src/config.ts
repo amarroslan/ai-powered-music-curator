@@ -9,4 +9,6 @@ export const config = {
   databaseUrl: env("DATABASE_URL") ?? "",
   corsOrigin: env("CORS_ORIGIN") ?? "http://localhost:5173",
   nodeEnv: env("NODE_ENV") ?? "development",
+  geminiApiKey: env("GEMINI_API_KEY") ?? "",
+  llmTimeoutMs: Number(env("LLM_TIMEOUT_MS") ?? 20_000),
 };
