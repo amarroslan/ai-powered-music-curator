@@ -1,0 +1,10 @@
+packages:
+  - apps/*
+  - packages/*
+
+# pnpm 10 blocks lifecycle scripts by default; allowlist the ones that need to run
+onlyBuiltDependencies:
+  - esbuild
+  - prisma
+  - "@prisma/client"
+  - "@prisma/engines"

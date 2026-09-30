@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  passwordHash String?
+  googleId     String?  @unique
+  name         String?
+  avatarUrl    String?
+  createdAt    DateTime @default(now())
+
+  quizSessions QuizSession[]
+  playlists    Playlist[]
+}
+
+model QuizSession {
+  id            String            @id @default(uuid()) @db.Uuid
+  userId        String?           @db.Uuid
+  status        QuizSessionStatus @default(active)
+  answers       Json              @default("[]")
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  user     User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  playlist Playlist?
+
+  @@index([userId])
+}
+
+enum QuizSessionStatus {
+  active
+  generating
+  done
+  failed
+}
+
+model Playlist {
+  id            String   @id @default(uuid()) @db.Uuid
+  shareId       String   @unique
+  quizSessionId String   @unique @db.Uuid
+  userId        String?  @db.Uuid
+  title         String
+  vibeSummary   String
+  createdAt     DateTime @default(now())
+
+  quizSession QuizSession      @relation(fields: [quizSessionId], references: [id], onDelete: Cascade)
+  user        User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  tracks      PlaylistTrack[]
+
+  @@index([userId])
+}
+
+model PlaylistTrack {
+  playlistId  String @db.Uuid
+  trackId     String @db.Uuid
+  position    Int
+  matchStatus MatchStatus
+  reason      String?
+
+  playlist Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  track    Track    @relation(fields: [trackId], references: [id], onDelete: Restrict)
+
+  @@id([playlistId, position])
+  @@index([trackId])
+}
+
+enum MatchStatus {
+  exact
+  fallback
+}
+
+/// Permanent cache of validated tracks — music APIs are hit at most
+/// once per unique track, ever (see SPEC.md §6, §12).
+model Track {
+  id          String       @id @default(uuid()) @db.Uuid
+  fingerprint String       @unique
+  title       String
+  artist      String
+  album       String?
+  year        Int?
+  coverUrl    String?
+  previewUrl  String?
+  isrc        String?
+  links       Json
+  source      TrackSource
+  verifiedAt  DateTime     @default(now())
+
+  playlistTracks PlaylistTrack[]
+
+  @@index([fingerprint])
+}
+
+enum TrackSource {
+  deezer
+  itunes
+}

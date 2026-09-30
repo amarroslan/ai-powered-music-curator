@@ -1,0 +1,37 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Outfit", ui-sans-serif, system-ui, sans-serif;
+
+  --color-ink: #14060f;
+  --color-paper: #fff7fb;
+
+  --color-neon-pink: #ff2fb3;
+  --color-electric-violet: #7c3aed;
+  --color-cyan-pop: #22d3ee;
+  --color-sunshine: #fbbf24;
+
+  --animate-eq: eq 1s ease-in-out infinite;
+
+  @keyframes eq {
+    0%,
+    100% {
+      transform: scaleY(0.3);
+    }
+    50% {
+      transform: scaleY(1);
+    }
+  }
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-display);
+  background: var(--color-ink);
+  color: var(--color-paper);
+}

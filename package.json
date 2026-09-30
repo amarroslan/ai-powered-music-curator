@@ -1,0 +1,20 @@
+{
+  "name": "music-curator",
+  "private": true,
+  "version": "0.1.0",
+  "description": "AI-powered music curator: adaptive vibe check → validated playlist with deep links",
+  "packageManager": "pnpm@10.18.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "dev:api": "pnpm --filter @curator/api dev",
+    "dev:web": "pnpm --filter @curator/web dev",
+    "db:up": "docker compose up -d db",
+    "db:down": "docker compose down",
+    "db:generate": "pnpm --filter @curator/api db:generate",
+    "db:migrate": "pnpm --filter @curator/api db:migrate"
+  }
+}
