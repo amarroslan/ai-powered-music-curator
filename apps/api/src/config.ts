@@ -2,16 +2,25 @@ import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { config as dotenvConfig } from "dotenv";
 
-// Both layouts (src/config.ts and dist/config.js) sit one directory
-// below the package root, so ../.env is apps/api/.env for either.
-// Second candidate: repo-root .env, if the user prefers one there.
-for (const rel of ["../.env", "../../../.env"]) {
-  const path = fileURLToPath(new URL(rel, import.meta.url));
-  if (existsSync(path)) {
-    dotenvConfig({ path });
-    break;
+// Local dev: load .env relative to the package root, whichever layout
+// we run from (src/config.ts and dist/config.js both sit one level
+// below it). Bundled/serverless builds (Vercel) can't resolve
+// import.meta.url — there env comes from the platform, so we skip
+// file loading entirely instead of crashing at import time.
+function loadDotenv(): void {
+  for (const rel of ["../.env", "../../../.env"]) {
+    try {
+      const path = fileURLToPath(new URL(rel, import.meta.url));
+      if (existsSync(path)) {
+        dotenvConfig({ path });
+        return;
+      }
+    } catch {
+      return;
+    }
   }
 }
+loadDotenv();
 
 function env(name: string): string | undefined {
   return process.env[name];
