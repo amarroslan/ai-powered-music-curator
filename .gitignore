@@ -14,3 +14,7 @@ coverage/
 *.log
 .vite/
 dist-vercel/
+
+.vercel
+api/
+.vercel/

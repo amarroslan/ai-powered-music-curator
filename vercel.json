@@ -3,12 +3,8 @@
   "framework": null,
   "installCommand": "corepack pnpm install",
   "buildCommand": "corepack pnpm -r build && corepack pnpm --filter @curator/api build:vercel",
-  "outputDirectory": "dist-vercel",
+  "outputDirectory": "apps/web/dist",
   "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "/api/[...path]/index.cjs"
-    },
     {
       "source": "/((?!api/).*)",
       "destination": "/index.html"

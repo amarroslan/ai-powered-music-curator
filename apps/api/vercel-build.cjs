@@ -1,36 +1,37 @@
 /**
  * Vercel build for a pnpm monorepo with framework: null.
- * Produces dist-vercel/ = static web output at the root + one
- * serverless catch-all function under api/.
+ *
+ * Static web output -> apps/web/dist (outputDirectory).
+ * Serverless API     -> <repo-root>/api/[...path].cjs, a self-contained
+ * esbuild bundle. Vercel executes files in the root api/ directory;
+ * anything inside outputDirectory is served statically (which is why
+ * the first deploy leaked the bundle source instead of running it).
  *
  * Run from apps/api (via `pnpm --filter @curator/api build:vercel`).
  */
-const { rmSync, mkdirSync, cpSync } = require("node:fs");
+const { rmSync, mkdirSync } = require("node:fs");
 const { join } = require("node:path");
 const { build } = require("esbuild");
 
 const root = join(__dirname, "..", "..");
-const outDir = join(root, "dist-vercel");
+const apiOut = join(root, "api", "[...path].cjs");
 
-rmSync(outDir, { recursive: true, force: true });
-mkdirSync(join(outDir, "api", "[...path]"), { recursive: true });
+rmSync(join(root, "api"), { recursive: true, force: true });
+mkdirSync(join(root, "api"), { recursive: true });
 
-// 1. Serverless function: bundle the API handler (server + deps).
-//    Prisma is type-import only, so no engine files are needed here.
+// Serverless function: bundle the API handler (server + deps).
+// Prisma is type-import only, so no engine files are needed here.
 build({
   entryPoints: [join(__dirname, "src", "api-handler.ts")],
   bundle: true,
   platform: "node",
   format: "cjs",
   target: "node20",
-  outfile: join(outDir, "api", "[...path]", "index.cjs"),
+  outfile: apiOut,
   logLevel: "info",
 }).catch((err) => {
   console.error(err);
   process.exit(1);
 });
 
-// 2. Static web output at the root (index.html at dist-vercel/).
-cpSync(join(root, "apps", "web", "dist"), outDir, { recursive: true });
-
-console.log("vercel bundle written to dist-vercel/");
+console.log("serverless bundle written to api/[...path].cjs");
