@@ -14,7 +14,9 @@ const { join } = require("node:path");
 const { build } = require("esbuild");
 
 const root = join(__dirname, "..", "..");
-const apiOut = join(root, "api", "[...path].cjs");
+// .js extension: Vercel's Node builder only treats .js/.ts files in
+// api/ as serverless functions (.cjs is served, never executed).
+const apiOut = join(root, "api", "[...path].js");
 
 rmSync(join(root, "api"), { recursive: true, force: true });
 mkdirSync(join(root, "api"), { recursive: true });
