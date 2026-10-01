@@ -14,9 +14,11 @@ const { join } = require("node:path");
 const { build } = require("esbuild");
 
 const root = join(__dirname, "..", "..");
-// .js extension: Vercel's Node builder only treats .js/.ts files in
-// api/ as serverless functions (.cjs is served, never executed).
-const apiOut = join(root, "api", "[...path].js");
+// Single well-known function name; vercel.json rewrites /api/* onto
+// it (rewrites preserve the original URL, so Express sees the real
+// path). Bracket catch-all names ([...x].js) proved unreliable for
+// framework:null projects.
+const apiOut = join(root, "api", "index.js");
 
 rmSync(join(root, "api"), { recursive: true, force: true });
 mkdirSync(join(root, "api"), { recursive: true });
