@@ -1,9 +1,5 @@
 import { z } from "zod";
-
-/** Streaming platforms we deep-link to. */
-export const PLATFORMS = ["spotify", "youtube", "apple_music"] as const;
-export type Platform = (typeof PLATFORMS)[number];
-export const PlatformSchema = z.enum(PLATFORMS);
+import type { Platform } from "./platforms.js";
 
 export const PLATFORM_LABELS: Record<Platform, string> = {
   spotify: "Spotify",
@@ -11,7 +7,9 @@ export const PLATFORM_LABELS: Record<Platform, string> = {
   apple_music: "Apple Music",
 };
 
-/** Resolved deep links per platform. `null` = no exact link found. */
+/** Resolved deep links per platform. Never null in practice: the
+ * resolver fills platform search URLs as fallbacks so every track
+ * always has three clickable destinations. */
 export const TrackLinksSchema = z.object({
   spotify: z.string().url().nullable(),
   youtube: z.string().url().nullable(),
@@ -28,7 +26,7 @@ export const TrackSchema = z.object({
   year: z.number().int().nullable(),
   coverUrl: z.string().url().nullable(),
   links: TrackLinksSchema,
-  /** exact = resolved to a real catalog entry; fallback = platform search URL */
+  /** exact = verified against a real music catalog */
   matchStatus: z.enum(["exact", "fallback"]),
   reason: z.string().max(200).nullable().optional(),
 });
@@ -47,10 +45,3 @@ export const CandidateTrackSchema = z.object({
   confidence: z.number().min(0).max(1),
 });
 export type CandidateTrack = z.infer<typeof CandidateTrackSchema>;
-
-export const GeneratePlaylistRequestSchema = z.object({
-  sessionId: z.string().uuid(),
-});
-export const GeneratePlaylistResponseSchema = z.object({
-  playlistId: z.string().uuid(),
-});

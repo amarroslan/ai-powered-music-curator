@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import type { Answer, Question, QuizHistoryEntry } from "@curator/shared";
 import { nextQuestion } from "../api/quizApi";
 
@@ -25,6 +26,7 @@ const INITIAL: QuizFlowState = {
  * question is served locally so the quiz opens instantly.
  */
 export function useQuiz(firstQuestion: Question) {
+  const navigate = useNavigate();
   const [state, setState] = useState<QuizFlowState>({
     ...INITIAL,
     question: firstQuestion,
@@ -36,8 +38,8 @@ export function useQuiz(firstQuestion: Question) {
       try {
         const res = await nextQuestion(history);
         if (res.done) {
-          // M3 wires this to the real generation pipeline.
-          window.location.href = "/generating";
+          // Hand the full transcript to the curation pipeline (M3).
+          navigate("/generating", { state: { history } });
           return;
         }
         setState((s) => ({
@@ -54,7 +56,7 @@ export function useQuiz(firstQuestion: Question) {
         }));
       }
     },
-    [],
+    [navigate],
   );
 
   const answer = useCallback(

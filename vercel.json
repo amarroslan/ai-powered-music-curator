@@ -4,6 +4,11 @@
   "installCommand": "corepack pnpm install",
   "buildCommand": "corepack pnpm -r build && corepack pnpm --filter @curator/api build:vercel",
   "outputDirectory": "apps/web/dist",
+  "functions": {
+    "api/index.js": {
+      "maxDuration": 60
+    }
+  },
   "rewrites": [
     {
       "source": "/api/:path*",

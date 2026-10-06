@@ -5,7 +5,7 @@ import { config } from "../config.js";
 
 export function getQuizLlmProvider(): QuizLlmProvider {
   if (config.geminiApiKey) {
-    return createGeminiProvider(config.geminiApiKey);
+    return createGeminiProvider();
   }
   console.warn(
     "[llm] GEMINI_API_KEY not set — using deterministic mock questions (M2 dev mode)",
@@ -20,3 +20,5 @@ export type {
   NextQuestionInput,
   NextQuestionResult,
 } from "./types.js";
+export { generateCandidates } from "./candidates.js";
+export type { CuratorBlueprint } from "./candidates.js";

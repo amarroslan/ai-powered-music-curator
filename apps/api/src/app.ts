@@ -4,6 +4,7 @@ import { ZodError } from "zod";
 import type { PrismaClient } from "@prisma/client";
 import { healthRouter } from "./routes/health.js";
 import { quizRouter } from "./routes/quiz.js";
+import { playlistsRouter } from "./routes/playlists.js";
 import { createQuizEngine, QuizEngineError } from "./quiz/engine.js";
 import { getQuizLlmProvider } from "./llm/index.js";
 import { LlmError } from "./llm/types.js";
@@ -20,6 +21,7 @@ export function createApp(prisma: PrismaClient | null = null): express.Express {
 
   app.use("/api", healthRouter(prisma, engine.providerName));
   app.use("/api", quizRouter(engine));
+  app.use("/api", playlistsRouter());
 
   app.use((_req, res) => {
     res.status(404).json({ error: "not_found" });
