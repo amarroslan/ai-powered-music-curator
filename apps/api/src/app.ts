@@ -1,10 +1,15 @@
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import { ZodError } from "zod";
 import type { PrismaClient } from "@prisma/client";
 import { healthRouter } from "./routes/health.js";
 import { quizRouter } from "./routes/quiz.js";
 import { playlistsRouter } from "./routes/playlists.js";
+import { authRouter } from "./routes/auth.js";
+import { meRouter } from "./routes/me.js";
+import { AuthError } from "./auth/service.js";
+import { GoogleAuthError } from "./auth/google.js";
 import { createQuizEngine, QuizEngineError } from "./quiz/engine.js";
 import { getQuizLlmProvider } from "./llm/index.js";
 import { LlmError } from "./llm/types.js";
@@ -14,14 +19,17 @@ export function createApp(prisma: PrismaClient | null = null): express.Express {
   const app = express();
 
   app.disable("x-powered-by");
-  app.use(cors({ origin: config.corsOrigin }));
+  app.use(cors({ origin: config.corsOrigin, credentials: true }));
   app.use(express.json({ limit: "256kb" }));
+  app.use(cookieParser());
 
   const engine = createQuizEngine(getQuizLlmProvider());
 
   app.use("/api", healthRouter(prisma, engine.providerName));
+  app.use("/api", authRouter(prisma));
+  app.use("/api", meRouter(prisma));
   app.use("/api", quizRouter(engine));
-  app.use("/api", playlistsRouter());
+  app.use("/api", playlistsRouter(prisma));
 
   app.use((_req, res) => {
     res.status(404).json({ error: "not_found" });
@@ -34,6 +42,10 @@ export function createApp(prisma: PrismaClient | null = null): express.Express {
       return;
     }
     if (err instanceof QuizEngineError) {
+      res.status(err.status).json({ error: err.message });
+      return;
+    }
+    if (err instanceof AuthError || err instanceof GoogleAuthError) {
       res.status(err.status).json({ error: err.message });
       return;
     }

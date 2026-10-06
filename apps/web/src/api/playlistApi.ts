@@ -1,11 +1,16 @@
 import type { GeneratePlaylistRequest, Playlist } from "@curator/shared";
+import { getAccessToken } from "./authApi";
 
 export async function generatePlaylist(
   body: GeneratePlaylistRequest,
 ): Promise<Playlist> {
+  const token = getAccessToken();
   const res = await fetch("/api/playlists/generate", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     body: JSON.stringify(body),
   });
   if (!res.ok) {

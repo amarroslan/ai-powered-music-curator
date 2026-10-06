@@ -29,6 +29,8 @@ export const TrackSchema = z.object({
   /** exact = verified against a real music catalog */
   matchStatus: z.enum(["exact", "fallback"]),
   reason: z.string().max(200).nullable().optional(),
+  /** Which catalog verified it (exact tracks only; feeds the track cache). */
+  source: z.enum(["deezer", "itunes"]).optional(),
 });
 export type Track = z.infer<typeof TrackSchema>;
 

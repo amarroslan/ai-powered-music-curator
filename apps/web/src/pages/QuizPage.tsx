@@ -29,11 +29,8 @@ export default function QuizPage() {
         className="pointer-events-none absolute -top-32 left-1/4 size-[24rem] rounded-full bg-electric-violet/30 blur-[120px]"
       />
 
-      <header className="relative z-10 px-6 pt-5 sm:px-10">
-        <div className="mx-auto flex w-full max-w-2xl items-center justify-between">
-          <span className="text-sm font-black tracking-tight">
-            vibe<span className="text-neon-pink">check</span>
-          </span>
+      <header className="relative z-10 px-6 pt-2 sm:px-10">
+        <div className="mx-auto flex w-full max-w-2xl items-center justify-end">
           <span className="text-xs font-bold tracking-widest text-white/50 uppercase">
             Q{questionCount} / {QUIZ_LIMITS.max}
           </span>

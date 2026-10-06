@@ -23,6 +23,7 @@ function toTrack(v: ValidatedTrack): Track {
     links: v.links,
     matchStatus: v.matchStatus,
     reason: v.reason,
+    source: v.source,
   };
 }
 

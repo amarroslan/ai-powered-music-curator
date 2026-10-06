@@ -1,4 +1,5 @@
 import { existsSync } from "node:fs";
+import { randomBytes } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { config as dotenvConfig } from "dotenv";
 
@@ -33,4 +34,22 @@ export const config = {
   nodeEnv: env("NODE_ENV") ?? "development",
   geminiApiKey: env("GEMINI_API_KEY") ?? "",
   llmTimeoutMs: Number(env("LLM_TIMEOUT_MS") ?? 20_000),
+
+  // Auth (SPEC.md §7): JWT access (15 min) + rotating refresh (30 d).
+  // Missing secret in dev → per-process random so stale tokens die on
+  // restart; in production this MUST be set explicitly.
+  authJwtSecret:
+    env("AUTH_JWT_SECRET") ??
+    (env("NODE_ENV") === "production"
+      ? ""
+      : randomBytes(32).toString("hex")),
+  accessTokenTtlSec: Number(env("ACCESS_TOKEN_TTL_SEC") ?? 15 * 60),
+  refreshTokenTtlSec: Number(env("REFRESH_TOKEN_TTL_SEC") ?? 30 * 24 * 60 * 60),
+  bcryptRounds: Number(env("BCRYPT_ROUNDS") ?? 12),
+
+  // Google OAuth 2.0 authorization-code flow (SPEC.md §7).
+  googleClientId: env("GOOGLE_CLIENT_ID") ?? "",
+  googleClientSecret: env("GOOGLE_CLIENT_SECRET") ?? "",
+  googleRedirectUri:
+    env("GOOGLE_REDIRECT_URI") ?? "http://localhost:5173/auth/google/callback",
 };
