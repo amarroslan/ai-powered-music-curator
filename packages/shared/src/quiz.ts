@@ -80,9 +80,9 @@ export type Answer = z.infer<typeof AnswerSchema>;
 
 export const QUIZ_LIMITS = {
   /** Minimum questions before generation is allowed. */
-  min: 20,
+  min: 10,
   /** Hard cap — the engine must finish by this many. */
-  max: 24,
+  max: 12,
 } as const;
 
 /** One answered question in the client-held quiz history. */

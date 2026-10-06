@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import type { Question } from "@curator/shared";
+import { QUIZ_LIMITS, type Question } from "@curator/shared";
 import { AnswerRow } from "../components/AnswerRow";
 import { useQuiz } from "../hooks/useQuiz";
 
@@ -35,13 +35,15 @@ export default function QuizPage() {
             vibe<span className="text-neon-pink">check</span>
           </span>
           <span className="text-xs font-bold tracking-widest text-white/50 uppercase">
-            Q{questionCount} / 20+
+            Q{questionCount} / {QUIZ_LIMITS.max}
           </span>
         </div>
         <div className="mx-auto mt-3 h-2 w-full max-w-2xl overflow-hidden rounded-full bg-white/10">
           <motion.div
             className="h-full rounded-full bg-gradient-to-r from-neon-pink to-cyan-pop"
-            animate={{ width: `${Math.min((questionCount / 20) * 100, 100)}%` }}
+            animate={{
+              width: `${Math.min((questionCount / QUIZ_LIMITS.max) * 100, 100)}%`,
+            }}
             transition={{ type: "spring", stiffness: 120, damping: 20 }}
           />
         </div>

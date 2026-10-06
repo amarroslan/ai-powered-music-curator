@@ -223,7 +223,7 @@ const POOLS = [WARMUP, DEEP_DIVE, CONTEXT, CURVEBALL];
 export const mockProvider: QuizLlmProvider = {
   name: "mock",
   async nextQuestion(input: NextQuestionInput): Promise<NextQuestionResult> {
-    const { questionCount, maxQuestions, history } = input;
+    const { questionCount, minQuestions, maxQuestions, history } = input;
     if (questionCount >= maxQuestions) return { done: true };
 
     const usedTopics = new Set(history.map((h) => h.question.topic));
@@ -231,8 +231,9 @@ export const mockProvider: QuizLlmProvider = {
     if (candidates.length === 0) return { done: true };
 
     // Deterministic "model judgment": finish at the first opportunity
-    // where count >= 20 (count*61 % 100 >= 50 first becomes true at 21).
-    if (questionCount >= 20 && (questionCount * 61) % 100 >= 50) {
+    // once the minimum is reached ((count*61) % 100 >= 50 first passes
+    // at minQuestions + 1 for min=10, so the mock lands on 11 turns).
+    if (questionCount >= minQuestions && (questionCount * 61) % 100 >= 50) {
       return { done: true };
     }
 

@@ -73,7 +73,7 @@ export default function LandingPage() {
           transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
           className="mt-6 max-w-xl text-lg text-white/70"
         >
-          20+ cheeky questions. One playlist that gets you. Every track
+          12 cheeky questions. One playlist that gets you. Every track
           deep-linked to Spotify, YouTube and Apple Music — zero dead ends.
         </motion.p>
 

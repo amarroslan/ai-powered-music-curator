@@ -1,6 +1,6 @@
 # Music Curator (working title)
 
-AI-powered playlist curator: an adaptive 20+ question vibe check → a validated ~25-track playlist where every song deep-links to Spotify, YouTube, or Apple Music. Full product/engineering details in [SPEC.md](./SPEC.md).
+AI-powered playlist curator: an adaptive ~12-question vibe check → a validated ~25-track playlist where every song deep-links to Spotify, YouTube, or Apple Music. Full product/engineering details in [SPEC.md](./SPEC.md).
 
 ## Monorepo layout
 
